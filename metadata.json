@@ -1,0 +1,6 @@
+{
+  "name": "YouTube Comment Studio",
+  "description": "Tableau de bord intelligent pour organiser, analyser et répondre aux commentaires YouTube grâce à l'IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

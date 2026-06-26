@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "Channel": {
+      "title": "Channel",
+      "description": "A YouTube channel being managed.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "description": "The UID of the user who owns this channel." },
+        "name": { "type": "string" },
+        "avatar": { "type": "string" },
+        "subscriberCount": { "type": "number" },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["ownerId", "name", "createdAt"]
+    },
+    "Video": {
+      "title": "Video",
+      "description": "A video belonging to a channel.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "description": "The UID of the user who owns this video." },
+        "channelId": { "type": "string" },
+        "title": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "publishedAt": { "type": "string" },
+        "viewCount": { "type": "number" },
+        "commentCount": { "type": "number" },
+        "isShort": { "type": "boolean" },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["ownerId", "channelId", "title", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a video.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "description": "The UID of the user managing this comment." },
+        "channelId": { "type": "string" },
+        "videoId": { "type": "string" },
+        "videoTitle": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "content": { "type": "string" },
+        "publishedAt": { "type": "string" },
+        "likeCount": { "type": "number" },
+        "isReplied": { "type": "boolean" },
+        "sentiment": { "type": "string" },
+        "category": { "type": "string" },
+        "tags": { "type": "array" },
+        "notes": { "type": "string" },
+        "language": { "type": "string" },
+        "translation": { "type": "string" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      },
+      "required": ["ownerId", "channelId", "videoId", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "channels": {
+      "schema": { "$ref": "#/entities/Channel" },
+      "description": "Stores channels managed by users."
+    },
+    "videos": {
+      "schema": { "$ref": "#/entities/Video" },
+      "description": "Stores videos for channels."
+    },
+    "comments": {
+      "schema": { "$ref": "#/entities/Comment" },
+      "description": "Stores comments for videos."
+    }
+  }
+}

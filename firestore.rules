@@ -1,0 +1,123 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 256 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null && request.auth.uid != null; }
+    
+    function isValidChannel(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'createdAt'])
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 1000
+        && data.createdAt == request.time
+        && (!('avatar' in data) || (data.avatar is string && data.avatar.size() <= 2000))
+        && (!('subscriberCount' in data) || data.subscriberCount is number);
+    }
+    
+    match /channels/{channelId} {
+      allow read: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(channelId) && isValidChannel(incoming());
+      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatar', 'subscriberCount'])
+        )
+        && incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 1000
+        && (!('avatar' in incoming()) || (incoming().avatar is string && incoming().avatar.size() <= 2000))
+        && (!('subscriberCount' in incoming()) || incoming().subscriberCount is number);
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+    }
+    
+    function isValidVideo(data) {
+      return data.keys().hasAll(['ownerId', 'channelId', 'title', 'createdAt'])
+        && data.ownerId == request.auth.uid
+        && data.channelId is string && data.channelId.size() <= 256
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 1000
+        && data.createdAt == request.time
+        && (!('thumbnail' in data) || (data.thumbnail is string && data.thumbnail.size() <= 2000))
+        && (!('publishedAt' in data) || (data.publishedAt is string && data.publishedAt.size() <= 200))
+        && (!('viewCount' in data) || data.viewCount is number)
+        && (!('commentCount' in data) || data.commentCount is number)
+        && (!('isShort' in data) || data.isShort is bool);
+    }
+    
+    match /videos/{videoId} {
+      allow read: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(videoId) && isValidVideo(incoming());
+      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().channelId == existing().channelId
+        && incoming().createdAt == existing().createdAt
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'thumbnail', 'publishedAt', 'viewCount', 'commentCount', 'isShort'])
+        )
+        && (!('title' in incoming()) || (incoming().title is string && incoming().title.size() > 0 && incoming().title.size() <= 1000))
+        && (!('thumbnail' in incoming()) || (incoming().thumbnail is string && incoming().thumbnail.size() <= 2000))
+        && (!('publishedAt' in incoming()) || (incoming().publishedAt is string && incoming().publishedAt.size() <= 200))
+        && (!('viewCount' in incoming()) || incoming().viewCount is number)
+        && (!('commentCount' in incoming()) || incoming().commentCount is number)
+        && (!('isShort' in incoming()) || incoming().isShort is bool);
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+    }
+    
+    function isValidComment(data) {
+      return data.keys().hasAll(['ownerId', 'channelId', 'videoId', 'content', 'createdAt'])
+        && data.ownerId == request.auth.uid
+        && data.channelId is string && data.channelId.size() <= 256
+        && data.videoId is string && data.videoId.size() <= 256
+        && data.content is string && data.content.size() > 0 && data.content.size() <= 10000
+        && data.createdAt == request.time
+        && (!('updatedAt' in data) || data.updatedAt == request.time)
+        && (!('videoTitle' in data) || (data.videoTitle is string && data.videoTitle.size() <= 1000))
+        && (!('authorName' in data) || (data.authorName is string && data.authorName.size() <= 500))
+        && (!('authorAvatar' in data) || (data.authorAvatar is string && data.authorAvatar.size() <= 2000))
+        && (!('publishedAt' in data) || (data.publishedAt is string && data.publishedAt.size() <= 200))
+        && (!('likeCount' in data) || data.likeCount is number)
+        && (!('isReplied' in data) || data.isReplied is bool)
+        && (!('sentiment' in data) || (data.sentiment is string && data.sentiment.size() <= 100))
+        && (!('category' in data) || (data.category is string && data.category.size() <= 100))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 5000))
+        && (!('language' in data) || (data.language is string && data.language.size() <= 100))
+        && (!('translation' in data) || (data.translation is string && data.translation.size() <= 10000))
+        && (!('tags' in data) || (data.tags is list && data.tags.size() <= 50));
+    }
+    
+    match /comments/{commentId} {
+      allow read: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(commentId) && isValidComment(incoming());
+      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().channelId == existing().channelId
+        && incoming().videoId == existing().videoId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['content', 'videoTitle', 'authorName', 'authorAvatar', 'publishedAt', 'likeCount', 'isReplied', 'sentiment', 'category', 'notes', 'language', 'translation', 'tags', 'updatedAt'])
+        )
+        && (!('content' in incoming()) || (incoming().content is string && incoming().content.size() > 0 && incoming().content.size() <= 10000))
+        && (!('videoTitle' in incoming()) || (incoming().videoTitle is string && incoming().videoTitle.size() <= 1000))
+        && (!('authorName' in incoming()) || (incoming().authorName is string && incoming().authorName.size() <= 500))
+        && (!('authorAvatar' in incoming()) || (incoming().authorAvatar is string && incoming().authorAvatar.size() <= 2000))
+        && (!('publishedAt' in incoming()) || (incoming().publishedAt is string && incoming().publishedAt.size() <= 200))
+        && (!('likeCount' in incoming()) || incoming().likeCount is number)
+        && (!('isReplied' in incoming()) || incoming().isReplied is bool)
+        && (!('sentiment' in incoming()) || (incoming().sentiment is string && incoming().sentiment.size() <= 100))
+        && (!('category' in incoming()) || (incoming().category is string && incoming().category.size() <= 100))
+        && (!('notes' in incoming()) || (incoming().notes is string && incoming().notes.size() <= 5000))
+        && (!('language' in incoming()) || (incoming().language is string && incoming().language.size() <= 100))
+        && (!('translation' in incoming()) || (incoming().translation is string && incoming().translation.size() <= 10000))
+        && (!('tags' in incoming()) || (incoming().tags is list && incoming().tags.size() <= 50));
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+    }
+  }
+}
